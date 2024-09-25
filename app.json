@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "smartagriculture",
+    "slug": "snack-4aaf7cca-c12b-4536-b02a-c0ef4f06bc2c",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.smartagriculture"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "react-native-auth0",
+        {
+          "domain": "dev-uly5wofn3nvc08r6.us.auth0.com"
+        }
+      ]
+    ]
+  }
+}

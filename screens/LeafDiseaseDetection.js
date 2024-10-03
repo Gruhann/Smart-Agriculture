@@ -84,34 +84,46 @@ export default function LeafDiseaseDetection() {
   const getPrediction = async (imageUri) => {
     console.log('Starting prediction process for image:', imageUri);
     setPrediction(null);
-    const formData = new FormData();
-    formData.append('file', {  // Change 'image' to 'file'
-      uri: imageUri,
-      type: 'image/jpeg',
-      name: 'leaf_image.jpg',
-    });
-  
-    console.log('FormData created:', formData);
-  
+
     try {
+      console.log('Preparing file for upload...');
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'leaf_image.jpg',
+      });
+
       console.log('Sending request to API...');
       const response = await fetch('https://ldd-pkw4.onrender.com/predict', {
         method: 'POST',
         body: formData,
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
         },
       });
-  
+
       console.log('Response received. Status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
       const result = await response.json();
       console.log('API response:', result);
-  
-      setPrediction(result.predicted_class);  // Change 'prediction' to 'predicted_class'
-      console.log('Prediction set:', result.predicted_class);
+
+      if (result.predicted_class) {
+        setPrediction(result.predicted_class);
+        console.log('Prediction set:', result.predicted_class);
+      } else {
+        console.error('Unexpected response format:', result);
+        Alert.alert('Error', 'Unexpected response from server. Please try again.');
+      }
     } catch (error) {
       console.error('Error in getPrediction:', error);
-      Alert.alert('Error', 'Failed to get prediction. Please try again.');
+      Alert.alert('Error', `Failed to get prediction: ${error.message}`);
     }
   };
 

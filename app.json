@@ -31,6 +31,11 @@
           "domain": "dev-uly5wofn3nvc08r6.us.auth0.com"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b437dd93-9587-4568-9a72-05da19074edd"
+      }
+    }
   }
 }

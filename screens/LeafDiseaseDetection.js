@@ -206,22 +206,26 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     alignItems: 'center',
+    width: '100%', // Add this line
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center', // Add this line
     backgroundColor: '#4CAF50',
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 10,
     marginBottom: 15,
     elevation: 3,
+    width: '80%', // Add this line
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 10,
+    flexShrink: 1, // Add this line
   },
   imageContainer: {
     alignItems: 'center',

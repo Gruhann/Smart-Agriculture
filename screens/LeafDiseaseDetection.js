@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Image, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const diseaseInfo = {
   healthy: {
@@ -133,103 +135,130 @@ export default function LeafDiseaseDetection() {
     const info = diseaseInfo[prediction];
     return (
       <View style={styles.infoContainer}>
-        <Text style={styles.infoTitle}>Prevention:</Text>
-        <Text style={styles.infoText}>{info.prevention}</Text>
-        <Text style={styles.infoTitle}>Cure:</Text>
-        <Text style={styles.infoText}>{info.cure}</Text>
-        <Text style={styles.infoTitle}>Tips:</Text>
-        <Text style={styles.infoText}>{info.tips}</Text>
+        {Object.entries(info).map(([key, value]) => (
+          <View key={key} style={styles.infoItem}>
+            <Text style={styles.infoTitle}>{key.charAt(0).toUpperCase() + key.slice(1)}:</Text>
+            <Text style={styles.infoText}>{value}</Text>
+          </View>
+        ))}
       </View>
     );
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {selectedImage ? (
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: selectedImage }} style={styles.image} />
-          <Text style={styles.resultText}>
-            {prediction
-              ? `Prediction: ${prediction}`
-              : 'Analyzing image...'}
-          </Text>
-          {renderDiseaseInfo()}
-        </View>
-      ) : (
-        <>
-          <Text style={styles.title}>Leaf Disease Detection</Text>
-          <Text style={styles.description}>
-            Click or select an image of a Leaf to find whether it is diseased or not
-          </Text>
+    <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Leaf Disease Detection</Text>
+        <Text style={styles.description}>
+          Upload or take a photo of a leaf to detect any diseases
+        </Text>
 
-          <View style={styles.buttonContainer}>
-            <Button title="Pick an Image from Gallery" onPress={pickImage} />
-            <Button title="Take a Photo" onPress={openCamera} />
+        {selectedImage ? (
+          <View style={styles.imageContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.image} />
+            {prediction ? (
+              <>
+                <Text style={styles.resultText}>Prediction: {prediction}</Text>
+                {renderDiseaseInfo()}
+              </>
+            ) : (
+              <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
+            )}
           </View>
-        </>
-      )}
-    </ScrollView>
+        ) : (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={pickImage}>
+              <Ionicons name="images-outline" size={24} color="#FFFFFF" />
+              <Text style={styles.buttonText}>Pick an Image</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={openCamera}>
+              <Ionicons name="camera-outline" size={24} color="#FFFFFF" />
+              <Text style={styles.buttonText}>Take a Photo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
     padding: 20,
   },
   title: {
-    fontSize: 24,
-    padding: 16,
-    textAlign: 'center',
+    fontSize: 28,
     fontWeight: 'bold',
-    color: 'black',
+    color: '#2E7D32',
+    textAlign: 'center',
+    marginBottom: 10,
   },
   description: {
-    fontSize: 18,
-    padding: 12,
+    fontSize: 16,
+    color: '#4CAF50',
     textAlign: 'center',
-    fontWeight: 'bold',
-    color: 'black',
+    marginBottom: 30,
   },
   buttonContainer: {
-    marginTop: 20,
+    alignItems: 'center',
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 15,
+    elevation: 3,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
   imageContainer: {
-    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
   },
   image: {
     width: 300,
     height: 300,
     borderRadius: 20,
+    marginBottom: 20,
   },
   resultText: {
-    fontSize: 18,
-    marginTop: 20,
-    textAlign: 'center',
+    fontSize: 20,
     fontWeight: 'bold',
-    color: 'black',
+    color: '#2E7D32',
+    marginBottom: 20,
+  },
+  loader: {
+    marginTop: 20,
   },
   infoContainer: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
+    padding: 20,
     width: '100%',
+    elevation: 3,
+  },
+  infoItem: {
+    marginBottom: 15,
   },
   infoTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10,
-    color: '#333',
+    color: '#2E7D32',
+    marginBottom: 5,
   },
   infoText: {
-    fontSize: 14,
-    marginBottom: 10,
-    color: '#666',
+    fontSize: 16,
+    color: '#333',
   },
 });

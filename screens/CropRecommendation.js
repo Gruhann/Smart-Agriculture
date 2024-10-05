@@ -1,117 +1,164 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Image, Alert } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+
 export default function CropRecommendation() {
- const [selectedImage, setSelectedImage] = useState(null);
+	const [formData, setFormData] = useState({
+		Nitrogen: '',
+		Phosporus: '',
+		Potassium: '',
+		Temperature: '',
+		Humidity: '',
+		Ph: '',
+		Rainfall: ''
+	});
+	const [result, setResult] = useState(null);
+	const [loading, setLoading] = useState(false);
 
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+	const handleInputChange = (name, value) => {
+		setFormData({ ...formData, [name]: value });
+	};
 
-    if (permissionResult.granted === false) {
-      Alert.alert("Permission to access media library is required!");
-      return;
-    }
+	const handleSubmit = async () => {
+		if (Object.values(formData).some(value => value === '')) {
+			Alert.alert('Missing Information', 'Please fill all fields before submitting.');
+			return;
+		}
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+		setLoading(true);
+		try {
+			const response = await fetch('https://crs-2td0.onrender.com/predict', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(formData),
+			});
 
-    if (!result.canceled) {
-      console.log(result.assets[0].uri); // Log URI to debug
-      setSelectedImage(result.assets[0].uri); // Set the URI from assets[0]
-    }
-  };
+			if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-  const openCamera = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+			const data = await response.json();
+			if (data.success) {
+				setResult(data.result);
+			} else {
+				Alert.alert('Prediction Error', data.error || 'An error occurred while processing your request.');
+			}
+		} catch (error) {
+			console.error('Error:', error);
+			Alert.alert('Connection Error', 'Unable to reach the server. Please check your internet connection and try again.');
+		} finally {
+			setLoading(false);
+		}
+	};
 
-    if (permissionResult.granted === false) {
-      Alert.alert("Permission to access the camera is required!");
-      return;
-    }
+	const renderInput = (key, placeholder, keyboardType = 'numeric') => (
+		<View style={styles.inputContainer} key={key}>
+			<Ionicons name="leaf-outline" size={24} color="#4CAF50" style={styles.inputIcon} />
+			<TextInput
+				style={styles.input}
+				placeholder={placeholder}
+				placeholderTextColor="#888"
+				value={formData[key]}
+				onChangeText={(text) => handleInputChange(key, text)}
+				keyboardType={keyboardType}
+			/>
+		</View>
+	);
 
-    let result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+	return (
+		<LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+			<ScrollView contentContainerStyle={styles.scrollContent}>
+				<Text style={styles.title}>Crop Recommendation</Text>
+				<Text style={styles.description}>
+					Enter soil and environmental data to get personalized crop recommendations
+				</Text>
 
-    if (!result.canceled) {
-      console.log(result.assets[0].uri); // Log URI to debug
-      setSelectedImage(result.assets[0].uri); // Set the URI from assets[0]
-    }
-  };
+				{Object.keys(formData).map((key) => renderInput(key, key))}
 
-  return (
-    <View style={styles.container}>
-      {selectedImage ? (
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: selectedImage }} style={styles.image} />
-          <Text style={styles.resultText}>
-            Image uploaded successfully. Analyzing soil...
-          </Text>
-        </View>
-      ) : (
-        <>
-          <Text style={styles.title}>Crop Recommendation</Text>
-          <Text style={styles.description}>
-            Click or select an image of soil to find recommended crop to plant
-          </Text>
+				<TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+					{loading ? (
+						<ActivityIndicator color="#FFF" />
+					) : (
+						<Text style={styles.submitButtonText}>Get Recommendation</Text>
+					)}
+				</TouchableOpacity>
 
-          <View style={styles.buttonContainer}>
-            <Button title="Pick an Image from Gallery" onPress={pickImage} />
-            <Button title="Take a Photo" onPress={openCamera} />
-          </View>
-        </>
-      )}
-    </View>
-  );
+				{result && (
+					<View style={styles.resultContainer}>
+						<Text style={styles.resultText}>{result}</Text>
+					</View>
+				)}
+			</ScrollView>
+		</LinearGradient>
+	);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    padding: 16,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    color: 'black',
-  },
-  description: {
-    fontSize: 18,
-    padding: 12,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    color: 'black',
-  },
-  buttonContainer: {
-    marginTop: 20,
-  },
-  imageContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1, // Ensures that the image container takes up all available space
-  },
-  image: {
-    width: 300,
-    height: 300,
-    borderRadius: 20,
-  },
-  resultText: {
-    fontSize: 18,
-    marginTop: 20,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    color: 'black',
-  },
+	container: {
+		flex: 1,
+	},
+	scrollContent: {
+		flexGrow: 1,
+		justifyContent: 'center',
+		padding: 20,
+	},
+	title: {
+		fontSize: 28,
+		fontWeight: 'bold',
+		color: '#2E7D32',
+		textAlign: 'center',
+		marginBottom: 10,
+	},
+	description: {
+		fontSize: 16,
+		color: '#4CAF50',
+		textAlign: 'center',
+		marginBottom: 30,
+	},
+	inputContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#FFFFFF',
+		borderRadius: 10,
+		marginBottom: 15,
+		paddingHorizontal: 15,
+		elevation: 3,
+	},
+	inputIcon: {
+		marginRight: 10,
+	},
+	input: {
+		flex: 1,
+		height: 50,
+		color: '#333',
+	},
+	submitButton: {
+		backgroundColor: '#4CAF50',
+		paddingVertical: 15,
+		borderRadius: 10,
+		alignItems: 'center',
+		marginTop: 10,
+		elevation: 3,
+	},
+	submitButtonText: {
+		color: '#FFFFFF',
+		fontSize: 18,
+		fontWeight: 'bold',
+	},
+	resultContainer: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 10,
+		padding: 20,
+		marginTop: 30,
+		elevation: 3,
+	},
+	resultText: {
+		fontSize: 18,
+		color: '#2E7D32',
+		textAlign: 'center',
+		fontWeight: 'bold',
+	},
 });
 
 

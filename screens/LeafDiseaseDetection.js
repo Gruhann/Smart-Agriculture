@@ -119,6 +119,9 @@ export default function LeafDiseaseDetection() {
       if (result.predicted_class) {
         setPrediction(result.predicted_class);
         console.log('Prediction set:', result.predicted_class);
+      } else if (result.message === 'No leaf detected in the image.') {
+        setPrediction('no_leaf'); // Update state for no leaf detected
+        Alert.alert('No Leaf Detected', 'Please ensure the image contains a leaf.');
       } else {
         console.error('Unexpected response format:', result);
         Alert.alert('Error', 'Unexpected response from server. Please try again.');
@@ -145,6 +148,11 @@ export default function LeafDiseaseDetection() {
     );
   };
 
+  const resetSelection = () => {
+    setSelectedImage(null);
+    setPrediction(null);
+  };
+
   return (
     <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -160,6 +168,9 @@ export default function LeafDiseaseDetection() {
               <>
                 <Text style={styles.resultText}>Prediction: {prediction}</Text>
                 {renderDiseaseInfo()}
+                <TouchableOpacity style={styles.button} onPress={resetSelection}>
+                  <Text style={styles.buttonText}>Check Another Image</Text>
+                </TouchableOpacity>
               </>
             ) : (
               <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />

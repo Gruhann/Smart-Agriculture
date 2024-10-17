@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, Modal, Dimensions } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, Modal, Dimensions, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { StatusBar } from 'expo-status-bar';
+import Slider from '@react-native-community/slider';
 
 const { width, height } = Dimensions.get('window');
 
-export default function CropRecommendation() {
+export default function CropRecommendation({navigation}) {
 	const [formData, setFormData] = useState({
 		Nitrogen: '',
 		Phosphorus: '',
@@ -39,43 +39,41 @@ export default function CropRecommendation() {
 		setLocation(location);
 		fetchWeatherData(location.coords.latitude, location.coords.longitude);
 	};
-
 	const fetchWeatherData = async (latitude, longitude) => {
-		// Replace with your actual weather API key and endpoint
 		const API_KEY = '65e4d0523061f24d243ef9ea9b381b43';
 		const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`;
 
 		try {
-			console.log('Fetching weather data from:', url.replace(API_KEY, 'API_KEY_HIDDEN'));
 			const response = await fetch(url);
-			
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-
 			const data = await response.json();
-			console.log('Weather API response:', JSON.stringify(data, null, 2));
+			console.log(data);
 
-			if (data.cod && data.cod !== 200) {
-				throw new Error(data.message || 'Error fetching weather data');
-			}
+			// Mapping of weather descriptions to average rainfall values
+			const rainfallMapping = {
+				'light rain': 5, // Average rainfall in mm for light rain
+				'rain': 10,      // Average rainfall in mm for rain
+				'moderate rain': 15, // Average rainfall in mm for moderate rain
+				'heavy rain': 20, // Average rainfall in mm for heavy rain
+				'very heavy rain': 30, // Average rainfall in mm for very heavy rain
+				'extreme rain': 50, // Average rainfall in mm for extreme rain
+				'no rain': 0      // No rain
+			};
+
+			const description = data.weather[0]?.description || 'no rain';
+			const averageRainfall = rainfallMapping[description] || 0; // Default to 0 if not found
 
 			setFormData(prevData => ({
 				...prevData,
 				Temperature: data.main?.temp?.toString() || '',
 				Humidity: data.main?.humidity?.toString() || '',
-				Rainfall: (data.rain?.['1h'] || 0).toString()
+				Rainfall: averageRainfall.toString(),
+				
 			}));
 		} catch (error) {
-			console.error('Error fetching weather data:', error);
-			console.error('Error details:', error.message);
-			
-			if (error.message.includes('status: 400')) {
-				console.log('Latitude:', latitude, 'Longitude:', longitude);
-				Alert.alert('Weather Data Error', 'Invalid request. Please check your location settings.');
-			} else {
-				Alert.alert('Weather Data Error', `Unable to fetch weather data: ${error.message}. Please enter manually.`);
-			}
+			Alert.alert('Weather Data Error', `Unable to fetch weather data: ${error.message}. Please enter manually.`);
 		}
 	};
 
@@ -87,7 +85,6 @@ export default function CropRecommendation() {
 		setLoading(true);
 		setResult(null);
 
-		// Validate input
 		for (let key in formData) {
 			if (!formData[key]) {
 				Alert.alert('Error', `Please enter a value for ${key}`);
@@ -97,10 +94,9 @@ export default function CropRecommendation() {
 		}
 
 		try {
-			// Create a new object with the correct keys for the server
 			const serverFormData = {
 				Nitrogen: formData.Nitrogen,
-				Phosporus: formData.Phosphorus, // Note the spelling change here
+				Phosporus: formData.Phosphorus,
 				Potassium: formData.Potassium,
 				Temperature: formData.Temperature,
 				Humidity: formData.Humidity,
@@ -108,7 +104,6 @@ export default function CropRecommendation() {
 				Rainfall: formData.Rainfall
 			};
 
-			console.log('Submitting form data:', serverFormData);
 			const response = await fetch('https://crs-2td0.onrender.com/predict', {
 				method: 'POST',
 				headers: {
@@ -117,25 +112,15 @@ export default function CropRecommendation() {
 				body: JSON.stringify(serverFormData),
 			});
 
-			console.log('API Response status:', response.status);
-
 			if (!response.ok) {
 				const errorText = await response.text();
-				console.error('API Error response:', errorText);
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 
 			const data = await response.json();
-			console.log('API Response data:', data);
-
-			if (data.error) {
-				throw new Error(data.error);
-			}
-
-			setResult(data.result);
+			setResult(data.result); // Assuming data.result contains the crop recommendation
 			setShowForm(false); // Hide the form after getting the result
 		} catch (error) {
-			console.error('Error in handleSubmit:', error);
 			Alert.alert('Error', `Failed to get recommendation: ${error.message}`);
 		} finally {
 			setLoading(false);
@@ -144,7 +129,7 @@ export default function CropRecommendation() {
 
 	const handleNewRecommendation = () => {
 		setResult(null);
-		setShowForm(true);
+		setShowForm(true); // Show the form again
 		setFormData({
 			Nitrogen: '',
 			Phosphorus: '',
@@ -155,22 +140,8 @@ export default function CropRecommendation() {
 			Rainfall: '',
 			SoilType: ''
 		});
-		getLocationAndWeather(); // Fetch weather data again
+		getLocationAndWeather(); // Optionally fetch new weather data
 	};
-
-	const renderInput = (key, placeholder, keyboardType = 'numeric') => (
-		<View style={styles.inputContainer} key={key}>
-			<Ionicons name="leaf-outline" size={24} color="#4CAF50" style={styles.inputIcon} />
-			<TextInput
-				style={styles.input}
-				placeholder={placeholder}
-				placeholderTextColor="#888"
-				value={formData[key]}
-				onChangeText={(text) => handleInputChange(key, text)}
-				keyboardType={keyboardType}
-			/>
-		</View>
-	);
 
 	const renderSoilTypeSelector = () => (
 		<View style={styles.inputContainer}>
@@ -212,14 +183,12 @@ export default function CropRecommendation() {
 				newFormData.Ph = '6.2';
 				break;
 			case "I'm not sure":
-				// Use average values
 				newFormData.Nitrogen = '50';
 				newFormData.Phosphorus = '40';
 				newFormData.Potassium = '35';
 				newFormData.Ph = '6.5';
 				break;
 			default:
-				// Clear values if no soil type is selected
 				newFormData.Nitrogen = '';
 				newFormData.Phosphorus = '';
 				newFormData.Potassium = '';
@@ -230,7 +199,6 @@ export default function CropRecommendation() {
 		setModalVisible(false);
 	};
 
-	// Add this new component
 	const SoilTypeModal = () => (
 		<Modal
 			animationType="slide"
@@ -260,15 +228,6 @@ export default function CropRecommendation() {
 						))}
 					</ScrollView>
 					<TouchableOpacity
-						style={styles.infoButton}
-						onPress={() => {
-							// Open a link to a soil type guide or show more detailed information
-							Alert.alert("Soil Type Guide", "You can determine your soil type by its texture and appearance. Sandy soil is gritty, clay is sticky, loamy is a mix, and silt is smooth like flour.");
-						}}
-					>
-						<Text style={styles.infoButtonText}>Learn More About Soil Types</Text>
-					</TouchableOpacity>
-					<TouchableOpacity
 						style={styles.closeButton}
 						onPress={() => setModalVisible(false)}
 					>
@@ -279,32 +238,62 @@ export default function CropRecommendation() {
 		</Modal>
 	);
 
+	const renderSlider = (key, label, min, max) => (
+		<View style={styles.sliderContainer} key={key}>
+			<Text style={styles.sliderLabel}>{label}</Text>
+			<Slider
+				style={styles.slider}
+				minimumValue={min}
+				maximumValue={max}
+				value={parseFloat(formData[key]) || min}
+				onValueChange={(value) => handleInputChange(key, value.toFixed(2))}
+				minimumTrackTintColor="#000000"
+				maximumTrackTintColor="#CCCCCC"
+			/>
+			<View style={styles.sliderValues}>
+				<Text>{min}</Text>
+				<Text>{formData[key] || min}</Text>
+				<Text>{max}</Text>
+			</View>
+		</View>
+	);
+
 	return (
-		<LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+		<SafeAreaView style={styles.container}>
+			<StatusBar style="dark" />
 			<ScrollView contentContainerStyle={styles.scrollContent}>
-				<Text style={styles.title}>Crop Recommendation</Text>
-				
+				<View style={styles.header}>
+					<TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+						<Ionicons name="arrow-back" size={24} color="black" />
+					</TouchableOpacity>
+					<Text style={styles.headerTitle}>Crop Recommendation</Text>
+				</View>
+
 				{showForm ? (
 					<>
-						<Text style={styles.description}>
-							We'll use your location for weather data. Please select your soil type for the best recommendation.
-						</Text>
-
+						<Text style={styles.sectionTitle}>Select Soil Type</Text>
 						{renderSoilTypeSelector()}
-						{Object.keys(formData).filter(key => key !== 'SoilType').map((key) => renderInput(key, key))}
-
-						<TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+						<Text style={styles.sectionTitle1}>Fine-tune with options</Text>
+						{renderSlider('Nitrogen', 'Nitrogen', 0, 140)}
+						{renderSlider('Phosphorus', 'Phosphorus', 5, 145)}
+						{renderSlider('Potassium', 'Potassium', 5, 205)}
+						{renderSlider('Temperature', 'Temperature', 8.83, 43.68)}
+						{renderSlider('Humidity', 'Humidity', 14.26, 99.98)}
+						{renderSlider('Ph', 'Ph', 3.5, 9.94)}
+						{renderSlider('Rainfall', 'Rainfall', 20.21, 298.56)}
+						<TouchableOpacity style={styles.analyzeButton} onPress={handleSubmit} disabled={loading}>
 							{loading ? (
 								<ActivityIndicator color="#FFF" />
 							) : (
-								<Text style={styles.submitButtonText}>Get Recommendation</Text>
+								<Text style={styles.analyzeButtonText}>Analyze Soil</Text>
 							)}
 						</TouchableOpacity>
 					</>
 				) : (
-					<View style={styles.resultContainer}>
-						<Text style={styles.resultTitle}>Recommended Crop:</Text>
-						<Text style={styles.resultText}>{result}</Text>
+					// Display the crop recommendation if available
+					<View style={styles.recommendationContainer}>
+						<Text style={styles.recommendationTitle}>Recommended Crop:</Text>
+						<Text style={styles.recommendationText}>{result}</Text>
 						<TouchableOpacity style={styles.newRecommendationButton} onPress={handleNewRecommendation}>
 							<Text style={styles.newRecommendationButtonText}>Get Another Recommendation</Text>
 						</TouchableOpacity>
@@ -312,31 +301,32 @@ export default function CropRecommendation() {
 				)}
 			</ScrollView>
 			<SoilTypeModal />
-		</LinearGradient>
+		</SafeAreaView>
 	);
 }
-
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
+		backgroundColor: '#f8fcf8',
+
 	},
 	scrollContent: {
 		flexGrow: 1,
 		justifyContent: 'center',
 		padding: 20,
 	},
-	title: {
-		fontSize: 28,
-		fontWeight: 'bold',
-		color: '#2E7D32',
-		textAlign: 'center',
-		marginBottom: 10,
+	header: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		flexDirection: 'row',
+		alignItems: 'center',
+		padding: 10,
 	},
-	description: {
-		fontSize: 16,
-		color: '#4CAF50',
-		textAlign: 'center',
-		marginBottom: 30,
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: 'bold',
+		marginLeft: 10,
 	},
 	inputContainer: {
 		flexDirection: 'row',
@@ -347,55 +337,13 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 15,
 		elevation: 3,
 	},
-	inputIcon: {
-		marginRight: 10,
-	},
-	input: {
-		flex: 1,
-		height: 50,
-		color: '#333',
-	},
-	submitButton: {
-		backgroundColor: '#4CAF50',
-		paddingVertical: 15,
-		borderRadius: 10,
-		alignItems: 'center',
-		marginTop: 10,
-		elevation: 3,
-	},
-	submitButtonText: {
-		color: '#FFFFFF',
-		fontSize: 18,
-		fontWeight: 'bold',
-	},
-	resultContainer: {
-		backgroundColor: '#FFFFFF',
-		borderRadius: 10,
-		padding: 20,
-		marginTop: 30,
-		elevation: 3,
-		alignItems: 'center',
-	},
-	resultTitle: {
-		fontSize: 20,
-		fontWeight: 'bold',
-		color: '#2E7D32',
-		marginBottom: 10,
-	},
-	resultText: {
-		fontSize: 24,
-		color: '#4CAF50',
-		textAlign: 'center',
-		fontWeight: 'bold',
-		marginBottom: 20,
-	},
 	soilTypeButton: {
 		flex: 1,
 		height: 50,
 		justifyContent: 'center',
 	},
 	soilTypeButtonText: {
-		color: '#4CAF50',
+		color: 'black',
 		fontSize: 16,
 	},
 	modalOverlay: {
@@ -423,14 +371,11 @@ const styles = StyleSheet.create({
 		marginBottom: 15,
 		textAlign: 'center',
 		fontSize: 18,
-		fontWeight: 'bold'
-	},
-	picker: {
-		width: '100%',
-		height: 50
+		fontWeight: 'bold',
+		paddinLeft:10,
 	},
 	closeButton: {
-		backgroundColor: '#4CAF50',
+		backgroundColor: 'black',
 		borderRadius: 20,
 		padding: 10,
 		elevation: 2,
@@ -453,30 +398,91 @@ const styles = StyleSheet.create({
 	soilTypeItemLabel: {
 		fontSize: 16,
 		fontWeight: 'bold',
-		color: '#4CAF50',
+		color: 'black',
 	},
 	soilTypeItemDescription: {
 		fontSize: 14,
-		color: '#666',
+		color: 'black',
 	},
-	infoButton: {
-		marginTop: 10,
-		padding: 10,
+	sectionTitle: {
+		fontSize: 18,
+		fontWeight: 'bold',
+		color: 'black',
+		textAlign: 'center',
+		marginBottom: 10,
+		paddingTop:50,
 	},
-	infoButtonText: {
-		color: '#4CAF50',
-		textDecorationLine: 'underline',
+	sectionTitle1: {
+		fontSize: 18,
+		fontWeight: 'bold',
+		color: 'black',
+		textAlign: 'center',
+		marginBottom: 10,
+		paddingTop:10,
+	},
+	sliderContainer: {
+		marginBottom: 20,
+	},
+	sliderLabel: {
+		fontSize: 16,
+		fontWeight: 'bold',
+		color: 'black',
+		marginBottom: 5,
+	},
+	slider: {
+		width: '100%',
+		height: 40,
+	},
+	sliderValues: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		marginTop: 5,
+	},
+	analyzeButton: {
+		backgroundColor: 'black',
+		paddingVertical: 15,
+		borderRadius: 10,
+		alignItems: 'center',
+		marginTop: 20,
+		elevation: 3,
+	},
+	analyzeButtonText: {
+		color: 'white',
+		fontSize: 18,
+		fontWeight: 'bold',
 	},
 	newRecommendationButton: {
-		backgroundColor: '#4CAF50',
+		backgroundColor: 'black',
 		paddingVertical: 15,
-		paddingHorizontal: 20,
 		borderRadius: 10,
+		alignItems: 'center',
 		marginTop: 20,
+		elevation: 3,
 	},
 	newRecommendationButtonText: {
 		color: '#FFFFFF',
-		fontSize: 16,
+		fontSize: 18,
 		fontWeight: 'bold',
+		padding:10,
+	},
+	recommendationContainer: {
+		alignItems: 'center',
+		marginTop: 20,
+	},
+	recommendationTitle: {
+		fontSize: 18,
+		fontWeight: 'bold',
+		color: 'black',
+		textAlign: 'center',
+		marginBottom: 10,
+	},
+	recommendationText: {
+		fontSize: 22,
+		color: 'black',
+		textAlign: 'center',
+		fontWeight:"bold",
+	},
+	backButton: {
+		padding: 10,
 	},
 });

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, SafeAreaView, TextInput } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,34 +32,62 @@ export default function App() {
 }
 
 function HomeScreen({ navigation }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false); // State to manage search bar visibility
+
+  const insights = [
+    {
+      title: "Crop Recommendation",
+      image: "https://cdn.usegalileo.ai/stability/655cb49e-c4a5-4996-9a7e-782de0650ecc.png",
+      onPress: () => navigation.navigate('Crop Recommendation'),
+    },
+    {
+      title: "Leaf Disease Detection",
+      image: "https://cdn.usegalileo.ai/stability/bcebbf08-cc5a-40cd-9d3e-1a397f0acf3b.png",
+      onPress: () => navigation.navigate('Leaf Disease Detection'),
+    },
+    {
+      title: "Crop Yield Prediction",
+      image: "https://cdn.usegalileo.ai/stability/b031bb5c-ab53-458a-af74-84ab3b180d95.png",
+      onPress: () => navigation.navigate('Crop Yield Prediction'),
+    },
+  ];
+
+  // Filter insights based on the search query
+  const filteredInsights = insights.filter(insight =>
+    insight.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Smart Agriculture</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => setIsSearchVisible(!isSearchVisible)}>
           <Ionicons name="search-outline" size={24} color="#0e1b0e" />
         </TouchableOpacity>
       </View>
 
+      {isSearchVisible && ( // Conditionally render the search input
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Insights..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      )}
+
       <Text style={styles.sectionTitle}>AI Insights</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cardContainer}>
-        <InsightCard 
-          title="Crop Recommendation"
-          image="https://cdn.usegalileo.ai/stability/655cb49e-c4a5-4996-9a7e-782de0650ecc.png"
-          onPress={() => navigation.navigate('Crop Recommendation')}
-        />
-        <InsightCard 
-          title="Leaf Disease Detection"
-          image="https://cdn.usegalileo.ai/stability/bcebbf08-cc5a-40cd-9d3e-1a397f0acf3b.png"
-          onPress={() => navigation.navigate('Leaf Disease Detection')}
-        />
-        <InsightCard 
-          title="Crop Yield Prediction"
-          image="https://cdn.usegalileo.ai/stability/b031bb5c-ab53-458a-af74-84ab3b180d95.png"
-          onPress={() => navigation.navigate('Crop Yield Prediction')}
-        />
+        {filteredInsights.map((insight, index) => (
+          <InsightCard 
+            key={index}
+            title={insight.title}
+            image={insight.image}
+            onPress={insight.onPress}
+          />
+        ))}
       </ScrollView>
 
       <MenuItem title="Accessibility" />
@@ -80,7 +108,7 @@ function InsightCard({ title, image, onPress }) {
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <Image source={{ uri: image }} style={styles.cardImage} />
       <Text style={styles.cardTitle}>{title}</Text>
-      <TouchableOpacity style={styles.cardButton}>
+      <TouchableOpacity style={styles.cardButton} onPress={onPress}>
         <Text style={styles.cardButtonText}>Get Started</Text>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -112,6 +140,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0e1b0e',
   },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    margin: 16,
+    backgroundColor: '#ffffff',
+  },
   sectionTitle: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -133,7 +169,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    height: 400,
+    height: 370,
   },
   cardImage: {
     width: '100%',

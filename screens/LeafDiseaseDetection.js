@@ -22,10 +22,11 @@ const diseaseInfo = {
   }
 };
 
-export default function LeafDiseaseDetection() {
+export default function LeafDiseaseDetection({navigation}) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false); // Loading state
+  const [showButton, setShowButton] = useState(false); // State to show or hide the button
 
   const pickImage = async () => {
     console.log('Picking image from gallery...');
@@ -122,15 +123,19 @@ export default function LeafDiseaseDetection() {
         setPrediction(result.predicted_class);
         console.log('Prediction set:', result.predicted_class);
       } else if (result.message === 'No leaf detected in the image.') {
-        setPrediction('no_leaf'); // Update state for no leaf detected
+        setPrediction('No leaf in the image'); // Update state for no leaf detected
         Alert.alert('No Leaf Detected', 'Please ensure the image contains a leaf.');
       } else {
         console.error('Unexpected response format:', result);
+        setShowButton(true); // Reset showButton state
+
         Alert.alert('Error', 'Unexpected response from server. Please try again.');
       }
     } catch (error) {
       console.error('Error in getPrediction:', error);
+      setSelectedImage(null); // Remove image on error
       Alert.alert('Error', `Failed to get prediction: ${error.message}`);
+
     }
     setLoading(false);
   };
@@ -154,6 +159,7 @@ export default function LeafDiseaseDetection() {
   const resetSelection = () => {
     setSelectedImage(null);
     setPrediction(null);
+    setShowButton(false); // Reset showButton state
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -163,6 +169,7 @@ export default function LeafDiseaseDetection() {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
+					<Text style={styles.headerTitle}>Detect disease in Leaves</Text>
         </View>
         <Text style={styles.title}>Upload a leaf photo</Text>
         <Text style={styles.subtitle}>
@@ -173,12 +180,13 @@ export default function LeafDiseaseDetection() {
             <Image source={{ uri: selectedImage }} style={styles.leafImage} />
           ) : (
             <View style={styles.placeholder}>
+                  <Ionicons name="images" size={24} color="black" />
               <Text style={styles.placeholderText}>Upload an image from library</Text>
             </View>
           )}
         </View>
         {loading ? ( // Show ActivityIndicator when loading
-          <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />
+          <ActivityIndicator size="large" color="#000000" style={styles.loadingIndicator} />
         ) : (
           !selectedImage && ( // Show buttons only if no image is selected
             <View style={styles.buttonContainer}>
@@ -191,7 +199,7 @@ export default function LeafDiseaseDetection() {
               <View style={{ width: 8 }} />  
               <TouchableOpacity style={styles.buttonSecondary} onPress={pickImage}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center',gap:6 }}>
-                  <Ionicons name="images" size={24} color="black" />
+                  <Ionicons name="image" size={24} color="black" />
                   <Text style={styles.buttonTextSecondary}>Pick an image</Text>
                 </View>
               </TouchableOpacity>
@@ -207,6 +215,11 @@ export default function LeafDiseaseDetection() {
             </TouchableOpacity>
           </View>
         )}
+        {showButton && (
+          <TouchableOpacity style={styles.buttonReset} onPress={resetSelection}>
+            <Text style={styles.buttonTextReset}>Upload Another Image</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -215,22 +228,34 @@ export default function LeafDiseaseDetection() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f8fcf8',
+
   },
   scrollContent: {
     flexGrow: 1,
     padding: 16,
   },
   header: {
+    position: 'absolute',
+		top: 0,
+		left: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingBottom: 8,
+    padding:10
   },
+  headerTitle: {
+		fontSize: 20,
+		fontWeight: 'bold',
+		marginLeft: 10,
+	},
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     color: 'black',
-    paddingTop: 20,
+    paddingTop: 40,
+    padding:10,
+    paddingLeft:0,
   },
   subtitle: {
     fontSize: 16,
@@ -241,6 +266,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    
   },
   leafImage: {
     width: '100%',
@@ -293,6 +324,7 @@ const styles = StyleSheet.create({
   },
   loadingIndicator: {
     marginTop: 20,
+    color:"black",
   },
   resultContainer: {
     marginTop: 20,

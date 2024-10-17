@@ -1,110 +1,16 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, SafeAreaView } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 import LeafDiseaseDetection from './screens/LeafDiseaseDetection';
 import CropRecommendation from './screens/CropRecommendation';
 import CropYieldPrediction from './screens/CropYieldPrediction';
+import Contact from './screens/Contact'; 
 
 const Stack = createStackNavigator();
-
-function HomeScreen({ navigation }) {
-  return (
-    <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* App Logo */}
-        <Image source={require('./assets/icon.png')} style={styles.logo} />
-
-        {/* Tagline */}
-        <Text style={styles.title}>Farm Smart!</Text>
-        <Text style={styles.subtitle}>Improve your farming efficiency</Text>
-
-        {/* Action Buttons */}
-        <TouchableOpacity
-          style={styles.box}
-          onPress={() => navigation.navigate('Leaf Disease Detection')}
-        >
-          <Ionicons name="leaf-outline" size={24} color="#2E7D32" />
-          <Text style={styles.text}>Leaf Disease Detection</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.box}
-          onPress={() => navigation.navigate('Crop Recommendation')}
-        >
-          <Ionicons name="nutrition-outline" size={24} color="#2E7D32" />
-          <Text style={styles.text}>Crop Recommendation</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.box}
-          onPress={() => navigation.navigate('Crop Yield Prediction')}
-        >
-          <Ionicons name="trending-up-outline" size={24} color="#2E7D32" />
-          <Text style={styles.text}>Crop Yield Prediction</Text>
-        </TouchableOpacity>
-
-        <StatusBar style="auto" />
-      </ScrollView>
-    </LinearGradient>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#4CAF50',
-    marginBottom: 40,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  box: {
-    width: 300,
-    height: 100,
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    marginVertical: 10,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  text: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-    marginLeft: 15,
-  },
-});
 
 export default function App() {
   return (
@@ -112,24 +18,176 @@ export default function App() {
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
-          headerStyle: {
-            backgroundColor: '#4CAF50',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerShown: false,
         }}
       >
-        <Stack.Screen 
-          name="Home" 
-          component={HomeScreen} 
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Leaf Disease Detection" component={LeafDiseaseDetection} />
         <Stack.Screen name="Crop Recommendation" component={CropRecommendation} />
         <Stack.Screen name="Crop Yield Prediction" component={CropYieldPrediction} />
+        <Stack.Screen name="Contact" component={Contact} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+function HomeScreen({ navigation }) {
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="auto" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Smart Agriculture</Text>
+        <TouchableOpacity>
+          <Ionicons name="search-outline" size={24} color="#0e1b0e" />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.sectionTitle}>AI Insights</Text>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cardContainer}>
+        <InsightCard 
+          title="Crop Recommendation"
+          image="https://cdn.usegalileo.ai/stability/655cb49e-c4a5-4996-9a7e-782de0650ecc.png"
+          onPress={() => navigation.navigate('Crop Recommendation')}
+        />
+        <InsightCard 
+          title="Leaf Disease Detection"
+          image="https://cdn.usegalileo.ai/stability/bcebbf08-cc5a-40cd-9d3e-1a397f0acf3b.png"
+          onPress={() => navigation.navigate('Leaf Disease Detection')}
+        />
+        <InsightCard 
+          title="Crop Yield Prediction"
+          image="https://cdn.usegalileo.ai/stability/b031bb5c-ab53-458a-af74-84ab3b180d95.png"
+          onPress={() => navigation.navigate('Crop Yield Prediction')}
+        />
+      </ScrollView>
+
+      <MenuItem title="Accessibility" />
+      <MenuItem title="Text to Speech" />
+
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.supportButton} onPress={() => navigation.navigate('Contact')}>
+          <Ionicons name="chatbubble-outline" size={24} color="#0e1b0e" />
+          <Text style={styles.supportButtonText}>Contact Support</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function InsightCard({ title, image, onPress }) {
+  return (
+    <TouchableOpacity style={styles.card} onPress={onPress}>
+      <Image source={{ uri: image }} style={styles.cardImage} />
+      <Text style={styles.cardTitle}>{title}</Text>
+      <TouchableOpacity style={styles.cardButton}>
+        <Text style={styles.cardButtonText}>Get Started</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
+
+function MenuItem({ title }) {
+  return (
+    <TouchableOpacity style={styles.menuItem}>
+      <Text style={styles.menuItemText}>{title}</Text>
+      <Ionicons name="chevron-forward-outline" size={24} color="#0e1b0e" />
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fcf8',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0e1b0e',
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#0e1b0e',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  cardContainer: {
+    paddingLeft: 16,
+  },
+  card: {
+    width: 240,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    height: 400,
+  },
+  cardImage: {
+    width: '100%',
+    height: 240,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#0e1b0e',
+    padding: 16,
+  },
+  cardButton: {
+    backgroundColor: '#e7f3e7',
+    borderRadius: 20,
+    padding: 10,
+    margin: 16,
+    alignItems: 'center',
+  },
+  cardButtonText: {
+    color: '#0e1b0e',
+    fontWeight: 'bold',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#0e1b0e',
+  },
+  footer: {
+    padding: 16,
+    marginTop: 'auto',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  supportButton: {
+    flexDirection: 'row',
+    backgroundColor: '#e7f3e7',
+    borderRadius: 24,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportButtonText: {
+    color: '#0e1b0e',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+});

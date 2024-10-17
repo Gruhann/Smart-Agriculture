@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert,ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 const diseaseInfo = {
@@ -25,6 +25,7 @@ const diseaseInfo = {
 export default function LeafDiseaseDetection() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [prediction, setPrediction] = useState(null);
+  const [loading, setLoading] = useState(false); // Loading state
 
   const pickImage = async () => {
     console.log('Picking image from gallery...');
@@ -84,6 +85,7 @@ export default function LeafDiseaseDetection() {
   };
 
   const getPrediction = async (imageUri) => {
+    setLoading(true);
     console.log('Starting prediction process for image:', imageUri);
     setPrediction(null);
 
@@ -130,6 +132,7 @@ export default function LeafDiseaseDetection() {
       console.error('Error in getPrediction:', error);
       Alert.alert('Error', `Failed to get prediction: ${error.message}`);
     }
+    setLoading(false);
   };
 
   const renderDiseaseInfo = () => {
@@ -137,7 +140,7 @@ export default function LeafDiseaseDetection() {
 
     const info = diseaseInfo[prediction];
     return (
-      <View style={styles.infoContainer}>
+      <View style={styles.infoContainer}> 
         {Object.entries(info).map(([key, value]) => (
           <View key={key} style={styles.infoItem}>
             <Text style={styles.infoTitle}>{key.charAt(0).toUpperCase() + key.slice(1)}:</Text>
@@ -152,128 +155,167 @@ export default function LeafDiseaseDetection() {
     setSelectedImage(null);
     setPrediction(null);
   };
-
   return (
-    <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Leaf Disease Detection</Text>
-        <Text style={styles.description}>
-          Upload or take a photo of a leaf to detect any diseases
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.title}>Upload a leaf photo</Text>
+        <Text style={styles.subtitle}>
+          We'll analyze the photo and provide insights based on the results.
         </Text>
-
-        {selectedImage ? (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: selectedImage }} style={styles.image} />
-            {prediction ? (
-              <>
-                <Text style={styles.resultText}>Prediction: {prediction}</Text>
-                {renderDiseaseInfo()}
-                <TouchableOpacity style={styles.button} onPress={resetSelection}>
-                  <Text style={styles.buttonText}>Check Another Image</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
-            )}
-          </View>
+        <View style={styles.imageGrid} onTouchEnd={pickImage}>
+          {selectedImage ? (
+            <Image source={{ uri: selectedImage }} style={styles.leafImage} />
+          ) : (
+            <View style={styles.placeholder}>
+              <Text style={styles.placeholderText}>Upload an image from library</Text>
+            </View>
+          )}
+        </View>
+        {loading ? ( // Show ActivityIndicator when loading
+          <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />
         ) : (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={pickImage}>
-              <Ionicons name="images-outline" size={24} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Pick an Image</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={openCamera}>
-              <Ionicons name="camera-outline" size={24} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Take a Photo</Text>
+          !selectedImage && ( // Show buttons only if no image is selected
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.buttonPrimary} onPress={openCamera}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center',gap:6 }}>
+                  <Ionicons name="camera" size={24} color="white" />
+                  <Text style={styles.buttonTextPrimary}>Take photo</Text>
+                </View>
+              </TouchableOpacity>
+              <View style={{ width: 8 }} />  
+              <TouchableOpacity style={styles.buttonSecondary} onPress={pickImage}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center',gap:6 }}>
+                  <Ionicons name="images" size={24} color="black" />
+                  <Text style={styles.buttonTextSecondary}>Pick an image</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )
+        )}
+        {prediction && (
+          <View style={styles.resultContainer}>
+            <Text style={styles.resultText}>Prediction: {prediction}</Text>
+            {renderDiseaseInfo()}
+            <TouchableOpacity style={styles.buttonReset} onPress={resetSelection}>
+              <Text style={styles.buttonTextReset}>Check Another Image</Text>
             </TouchableOpacity>
           </View>
         )}
       </ScrollView>
-    </LinearGradient>
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
+    padding: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  description: {
-    fontSize: 16,
-    color: '#4CAF50',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  buttonContainer: {
-    alignItems: 'center',
-    width: '100%', // Add this line
-  },
-  button: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // Add this line
-    backgroundColor: '#4CAF50',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginBottom: 15,
-    elevation: 3,
-    width: '80%', // Add this line
+    paddingBottom: 8,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
+  title: {
+    fontSize: 22,
     fontWeight: 'bold',
-    marginLeft: 10,
-    flexShrink: 1, // Add this line
+    color: 'black',
+    paddingTop: 20,
   },
-  imageContainer: {
+  subtitle: {
+    fontSize: 16,
+    color: 'black',
+    paddingBottom: 12,
+  },
+  imageGrid: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  leafImage: {
+    width: '100%',
+    height: 300,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  placeholder: {
+    width: '100%',
+    height: 300,
+    borderRadius: 12,
+    backgroundColor: '#EEEEEE',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  image: {
-    width: 300,
-    height: 300,
-    borderRadius: 20,
-    marginBottom: 20,
+  placeholderText: {
+    color: 'gray',
+    fontSize: 16,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  buttonPrimary: {
+    flex: 1,
+    backgroundColor: 'black',
+    borderRadius: 24,
+    paddingVertical: 12,
+    marginRight: 6,
+  },
+  buttonSecondary: {
+    flex: 1,
+    backgroundColor: '#EEEEEE',
+    borderRadius: 24,
+    paddingVertical: 12,
+    marginLeft: 6,
+  },
+  buttonTextPrimary: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  buttonTextSecondary: {
+    color: 'black',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  loadingIndicator: {
+    marginTop: 20,
+  },
+  resultContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
   },
   resultText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2E7D32',
-    marginBottom: 20,
+    color: 'black',
+    marginBottom: 10,
   },
-  loader: {
-    marginTop: 20,
+  buttonReset: {
+    backgroundColor: '#000000',
+    borderRadius: 20,
+    padding: 10,
+    alignItems: 'center',
+    marginTop: 10,
+    color: '#FFFFFF',
   },
-  infoContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 20,
-    width: '100%',
-    elevation: 3,
-  },
-  infoItem: {
-    marginBottom: 15,
-  },
-  infoTitle: {
-    fontSize: 18,
+  buttonTextReset: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    color: '#2E7D32',
-    marginBottom: 5,
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#333',
   },
 });
